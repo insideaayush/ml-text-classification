@@ -32,52 +32,39 @@ Feature Extraction
 """ Count Vectors """
 
 # create a count vectorizer object
-count_vect_train_set = CountVectorizer(analyzer='word', token_pattern=r'\w{1,}')
-count_vect_train_set.fit(train_x)
+count_vect_set = CountVectorizer(analyzer='word', token_pattern=r'\w{1,}')
+count_vect_set.fit(train_x)
 
-count_vect_valid_set = CountVectorizer(analyzer='word', token_pattern=r'\w{1,}')
-count_vect_valid_set.fit(valid_x)
-
-# transform the training and validation set using count vectorizer object
-xtrain_count = count_vect_train_set.transform(train_x)
-xvalid_count = count_vect_valid_set.transform(valid_x)
+xtrain_count = count_vect_set.transform(train_x)
+xvalid_count = count_vect_set.transform(valid_x)
 
 """ TF-IDF Vectors """
 """ word level """
 # create a tf-idf vectorizer
-tfidf_vect_train_set = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', max_features=5000)
-tfidf_vect_train_set.fit(train_x)
-
-tfidf_vect_valid_set = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', max_features=5000)
-tfidf_vect_valid_set.fit(valid_x)
+tfidf_vect_set = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', max_features=5000)
+tfidf_vect_set.fit(train_x)
 
 # transform the training and validation set
-xtrain_tfidf_word = tfidf_vect_train_set.transform(train_x)
-xvalid_tfidf_word = tfidf_vect_valid_set.transform(valid_x)
+xtrain_tfidf_word = tfidf_vect_set.transform(train_x)
+xvalid_tfidf_word = tfidf_vect_set.transform(valid_x)
 
 """ ngram level """
 # create a tf-idf vectorizer
-tfidf_vect_ngram_train_set = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
-tfidf_vect_ngram_train_set.fit(train_x)
-
-tfidf_vect_ngram_valid_set = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
-tfidf_vect_ngram_valid_set.fit(valid_x)
+tfidf_vect_ngram_set = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
+tfidf_vect_ngram_set.fit(train_x)
 
 # transform the training and validation set
-xtrain_tfidf_ngram = tfidf_vect_ngram_train_set.transform(train_x)
-xvalid_tfidf_ngram = tfidf_vect_ngram_valid_set.transform(valid_x)
+xtrain_tfidf_ngram = tfidf_vect_ngram_set.transform(train_x)
+xvalid_tfidf_ngram = tfidf_vect_ngram_set.transform(valid_x)
 
 """ character level """
 # create a tf-idf vectorizer
-tfidf_vect_char_train_set = TfidfVectorizer(analyzer='char', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
-tfidf_vect_char_train_set.fit(train_x)
-
-tfidf_vect_char_valid_set = TfidfVectorizer(analyzer='char', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
-tfidf_vect_char_valid_set.fit(valid_x)
+tfidf_vect_char_set = TfidfVectorizer(analyzer='char', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
+tfidf_vect_char_set.fit(train_x)
 
 # transform the training and validation set
-xtrain_tfidf_char = tfidf_vect_char_train_set.transform(train_x)
-xvalid_tfidf_char = tfidf_vect_char_valid_set.transform(valid_x)
+xtrain_tfidf_char = tfidf_vect_char_set.transform(train_x)
+xvalid_tfidf_char = tfidf_vect_char_set.transform(valid_x)
 
 """ 
 Learning Model 
@@ -91,32 +78,45 @@ def train_model(classifier, feature_vector_train, label, feature_vector_valid, i
     
     if is_neural_net:
         predictions = predictions.argmax(axis=-1)
-    
-    return metrics.accuracy_score(predictions, valid_y)
+    return metrics.f1_score(valid_y, predictions, average="micro")
+
+"""
+Random Forest
+"""
+accuracy = train_model(ensemble.RandomForestClassifier(), xtrain_count, train_y, xvalid_count)
+print("RF, Count Vector :: ", accuracy)
+
+accuracy = train_model(ensemble.RandomForestClassifier(), xtrain_tfidf_ngram, train_y, xvalid_tfidf_ngram)
+print("RF, Tf-idf ngram Vector :: ", accuracy)
+
+accuracy = train_model(ensemble.RandomForestClassifier(), xtrain_tfidf_word, train_y, xvalid_tfidf_word)
+print("RF, Tf-idf word Vector :: ", accuracy)
 
 """
 SVM
 """
-# accuracy = train_model(svm.SVC(), xtrain_tfidf_ngram, train_y, xvalid_tfidf_ngram, is_neural_net=False)
-# print("SVM, ngram tf-idf vectors:: ", accuracy)
+accuracy = train_model(svm.SVC(), xtrain_tfidf_ngram, train_y, xvalid_tfidf_ngram, is_neural_net=False)
+print("SVM, ngram tf-idf vectors:: ", accuracy)
 
 """ Neural Network """
 
-def create_model_architecture(input_size):
-    # create input layer
-    input_layer = layers.Input((input_size, ), sparse=True)
+# def create_model_architecture(input_size):
+#     # create input layer
+#     input_layer = layers.Input((input_size, ), sparse=True)
 
-    # create hidden layer
-    hidden_layer = layers.Dense(100, activation="relu")(input_layer)
+#     # create hidden layer
+#     hidden_layer = layers.Dense(100, activation="relu")(input_layer)
 
-    # create output layer
-    output_layer = layers.Dense(1, activation="sigmoid")(hidden_layer)
+#     # create output layer
+#     output_layer = layers.Dense(1, activation="sigmoid")(hidden_layer)
 
-    classifier = models.Model(inputs=input_layer, outputs=output_layer)
-    classifier.compile(optimizer=optimizers.Adam(), loss='binary_crossentropy')
+#     classifier = models.Model(inputs=input_layer, outputs=output_layer)
+#     classifier.compile(optimizer=optimizers.Adam(), loss='binary_crossentropy')
 
-    return classifier
+#     return classifier
 
-classifier = create_model_architecture(xtrain_tfidf_ngram.shape[1])
-accuracy = train_model(classifier, xtrain_tfidf_ngram, train_y, xvalid_tfidf_ngram, is_neural_net=True)
-print("NN, n-gram tf-idf vectors :: ", accuracy)
+# classifier = create_model_architecture(xtrain_tfidf_ngram.shape[1])
+# accuracy = train_model(classifier, xtrain_tfidf_ngram, train_y, xvalid_tfidf_ngram, is_neural_net=True)
+# print("NN, n-gram tf-idf vectors :: ", accuracy)
+
+
